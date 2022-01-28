@@ -41,11 +41,11 @@ impl Config {
     pub fn load() -> Result<Self, Error> {
         let cfg_path = Self::cfg_path();
         Ok(match cfg_path.exists() {
-            true => serde_json::from_str(&std::fs::read_to_string(cfg_path)?)?,
+            true => toml::from_str(&std::fs::read_to_string(cfg_path)?)?,
             false => Config::default(),
         })
     }
     pub fn save(&self) -> Result<(), Error> {
-        std::fs::write(Self::cfg_path(), serde_json::to_string_pretty(self)?)
+        std::fs::write(Self::cfg_path(), toml::to_string_pretty(self).unwrap())
     }
 }
