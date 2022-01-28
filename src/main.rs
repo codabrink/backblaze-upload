@@ -7,8 +7,10 @@ use clipboard::ClipboardContext;
 use clipboard::ClipboardProvider;
 use config::Config;
 use notify::{watcher, DebouncedEvent, RecursiveMode, Watcher};
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use s3::bucket::Bucket;
 use s3::creds::Credentials;
+use std::ffi::OsStr;
 use std::sync::mpsc::channel;
 use std::time::Duration;
 
@@ -41,13 +43,32 @@ fn main() {
 
     loop {
         match rx.recv() {
-            Ok(DebouncedEvent::Create(p)) => {
+            Ok(DebouncedEvent::Create(p)) if p.is_file() => {
                 println!("File detected: {:?}", p);
                 let bytes = std::fs::read(&p).unwrap();
-                let file_name = p.file_name().unwrap().to_string_lossy().to_string();
-                let _ = bucket.put_object_blocking(&file_name, &bytes);
-                let _ = ctx.set_contents(format!("{}/{}", &config.base_url, &file_name));
-                println!("{} uploaded", file_name);
+
+                let file_name = p.file_name().unwrap();
+                let file_extension = p.extension().unwrap_or(OsStr::new("")).to_str().unwrap();
+                let rand_string: String = thread_rng()
+                    .sample_iter(&Alphanumeric)
+                    .take(5)
+                    .map(char::from)
+                    .collect();
+
+                let obfuscated_file = format!("{}.{}", rand_string, file_extension);
+
+                let _ = match mime_guess::from_ext(file_extension).first() {
+                    Some(guess) => bucket.put_object_with_content_type_blocking(
+                        &obfuscated_file,
+                        &bytes,
+                        &guess.to_string(),
+                    ),
+                    _ => bucket.put_object_blocking(&file_name.to_str().unwrap(), &bytes),
+                };
+
+                let _ = ctx.set_contents(format!("{}/{}", &config.base_url, &obfuscated_file));
+
+                println!("{:?} uploaded", file_name);
                 if config.delete_on_upload {
                     let _ = std::fs::remove_file(p);
                 }
