@@ -20,7 +20,7 @@ fn main() {
 
     // Create a channel to receive the events.
     let (tx, rx) = channel();
-    let mut watcher = watcher(tx, Duration::from_secs(0)).unwrap();
+    let mut watcher = watcher(tx, Duration::from_millis(200)).unwrap();
     watcher
         .watch(&config.upload_dir, RecursiveMode::Recursive)
         .unwrap();
