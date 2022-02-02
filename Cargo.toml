@@ -19,3 +19,4 @@ clipboard = "0.5"
 toml = "0.5"
 serde = { version = "1", features = ["derive"] }
 mime_guess = "2"
+rodio = "0.15"

@@ -10,9 +10,11 @@ use notify::{watcher, DebouncedEvent, RecursiveMode, Watcher};
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use s3::bucket::Bucket;
 use s3::creds::Credentials;
-use std::ffi::OsStr;
 use std::sync::mpsc::channel;
 use std::time::Duration;
+use std::{ffi::OsStr, io::Cursor};
+
+use rodio::{source::Source, Decoder, OutputStream};
 
 fn main() {
     let config = Config::load().unwrap();
@@ -41,6 +43,9 @@ fn main() {
     let bucket = Bucket::new(&config.bucket, region, creds).unwrap();
     let mut ctx: ClipboardContext = ClipboardProvider::new().unwrap();
 
+    let bell = include_bytes!("bird.ogg");
+    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+
     loop {
         match rx.recv() {
             Ok(DebouncedEvent::Create(p)) if p.is_file() => {
@@ -65,6 +70,12 @@ fn main() {
                 println!("{:?} uploaded", file_name);
                 if config.delete_on_upload {
                     let _ = std::fs::remove_file(p);
+                }
+
+                if config.upload_sound {
+                    let reader = Cursor::new(bell);
+                    let source = Decoder::new(reader).unwrap();
+                    let _ = &stream_handle.play_raw(source.convert_samples());
                 }
             }
             Err(e) => println!("watch error: {:?}", e),

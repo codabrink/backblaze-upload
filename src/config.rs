@@ -11,6 +11,7 @@ pub struct Config {
     pub bucket: String,
     pub base_url: String,
     pub delete_on_upload: bool,
+    pub upload_sound: bool,
 }
 
 impl ::std::default::Default for Config {
@@ -24,6 +25,7 @@ impl ::std::default::Default for Config {
             bucket: "bucket-name".to_string(),
             base_url: "https://s3.us-west-001.backblazeb2.com".to_string(),
             delete_on_upload: true,
+            upload_sound: true,
         };
         let _ = default.save();
         default
